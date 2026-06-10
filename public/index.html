@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Promo CRM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon">WA</div>
+                <h2>CRM Bot</h2>
+            </div>
+            <nav class="menu">
+                <a href="#" class="active" onclick="showTab('contactos', this)">Contactos</a>
+                <a href="#" onclick="showTab('chat', this)">Chat en Vivo</a>
+                <a href="#" onclick="showTab('configuracion', this)">Configuración</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <div>
+                    <h1 id="pageTitle">Gestión de Clientes</h1>
+                    <p id="pageSubtitle">Monitorea la ventana de 24 hrs y envía publicidad.</p>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div id="apiStatus" class="api-status checking" title="Meta API">
+                        <div class="status-dot"></div>
+                        <span id="apiStatusText">Meta...</span>
+                    </div>
+                    <div id="aiStatus" class="api-status checking" title="Gemini AI">
+                        <div class="status-dot"></div>
+                        <span id="aiStatusText">IA...</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB: CONTACTOS -->
+            <div id="tab-contactos" class="tab-content active">
+                <div class="actions-bar">
+                    <button class="btn btn-primary" onclick="refreshContacts()">Actualizar Lista</button>
+                </div>
+
+            <div class="test-panel">
+                <h2>🧪 Laboratorio de Pruebas</h2>
+                <p style="margin-bottom: 15px;">Envía mensajes de texto a tu número de prueba en bucle.</p>
+                
+                <div class="test-inputs" style="display: flex; gap: 15px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Número Destino (ej: 51936183039)</label>
+                        <input type="text" id="testPhone" placeholder="51936183039">
+                    </div>
+                    <div class="input-group" style="flex: 2;">
+                        <label>Mensaje a Enviar</label>
+                        <input type="text" id="testMessage" placeholder="Mensaje de prueba..." value="Test de CRM">
+                    </div>
+                </div>
+                
+                <div class="test-actions" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button class="btn btn-secondary" onclick="sendTestMessageOnce()">Enviar 1 vez</button>
+                    <button class="btn btn-primary" onclick="startTestLoop(1)">Bucle 1s</button>
+                    <button class="btn btn-primary" onclick="startTestLoop(10)">Bucle 10s</button>
+                    <button class="btn btn-primary" onclick="startTestLoop(60)">Bucle 60s</button>
+                    <button class="btn btn-danger" id="stopLoopBtn" onclick="stopTestLoop()" disabled>Detener Bucle</button>
+                </div>
+                <div id="testStatus" class="test-status" style="font-size: 0.85rem; color: var(--accent);">Esperando configuración...</div>
+            </div>
+
+            <div class="table-container" style="margin-top: 2rem;">
+                <table id="contactsTable">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Estado (24h Window)</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contactsBody">
+                        <!-- Content loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            </div> <!-- Cierre tab-contactos -->
+
+            <!-- TAB: CHAT -->
+            <div id="tab-chat" class="tab-content" style="display: none;">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <h2>Chat con <span id="chatPhoneTitle">Nadie seleccionado</span></h2>
+                        <button class="btn btn-secondary" onclick="loadChat()">Actualizar 🔄</button>
+                    </div>
+                    <div class="chat-messages" id="chatMessagesBox">
+                        <div style="text-align: center; color: var(--text-secondary); margin-top: 2rem;">Selecciona un contacto para ver el chat.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: CONFIGURACIÓN -->
+            <div id="tab-configuracion" class="tab-content" style="display: none;">
+                <div class="test-panel" style="margin-bottom: 2rem;">
+                    <h2>🌐 Estado del Webhook</h2>
+                    <p style="margin-bottom: 15px;">Copia esta URL y pégala en Meta for Developers para recibir mensajes.</p>
+                    <div class="input-group">
+                        <label>URL de Webhook (Click para copiar)</label>
+                        <input type="text" id="webhookUrlInput" readonly value="Cargando túnel..." style="font-family: monospace; color: var(--accent); font-weight: bold; font-size: 1.1rem; cursor: copy;" onclick="this.select(); document.execCommand('copy'); alert('¡URL Copiada!');">
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                        <span>Estado en Internet:</span>
+                        <div id="webhookPublicStatus" class="api-status checking">
+                            <div class="status-dot"></div>
+                            <span id="webhookPublicStatusText">Comprobando...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="test-panel">
+                    <h2>🤖 Personalidad del Bot (Inteligencia Artificial)</h2>
+                    <p style="margin-bottom: 15px;">Define cómo quieres que el bot responda a tus clientes. (Solo afecta si Gemini está conectado)</p>
+                    <div class="input-group">
+                        <label>Instrucciones de Sistema (System Prompt)</label>
+                        <textarea id="aiPrompt" rows="5" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; outline: none; resize: vertical;"></textarea>
+                    </div>
+                    <div style="text-align: right; margin-top: 10px;">
+                        <button class="btn btn-primary" onclick="saveAiConfig()">Guardar Cambios</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal para Enviar Plantilla -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content glass">
+            <h3>Enviar Plantilla de Marketing</h3>
+            <p>Se enviará al número: <strong id="modalPhoneTarget"></strong></p>
+            <div class="input-group">
+                <label for="templateName">Nombre de la Plantilla (ej: hello_world)</label>
+                <input type="text" id="templateName" value="hello_world" placeholder="hello_world">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="sendTemplate()">Enviar Ahora</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
